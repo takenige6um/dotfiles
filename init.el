@@ -26,6 +26,8 @@
 ;; M-x eval-buffer RET
 ;; M-x eval-region RET ;リージョン選択範囲を評価
 
+;; C-c , ,   hownメモ
+
 
 
 
@@ -84,18 +86,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; P65 CUIとGUIによる分岐
 ;; ターミナル以外はツールバー、スクロールバーを非表示
-(when window-system
-  ;; tool-barを非表示
-  (tool-bar-mode 0)
-  ;; scroll-barを非表示
-  (scroll-bar-mode 0))
+;; (when window-system
+;;   ;; tool-barを非表示
+;;   (tool-bar-mode 0)
+;;   ;; scroll-barを非表示
+;;   (scroll-bar-mode 0))
 
-;; CocoaEmacs以外はメニューバーを非表示
-;;(unless (eq window-system 'ns)
-  ;; menu-barを非表示
-  ;;(menu-bar-mode 0))
+;; ;; CocoaEmacs以外はメニューバーを非表示
+;; (unless (eq window-system 'ns)
+;;  ;; menu-barを非表示
+;;   (menu-bar-mode 0))
 
-
+(tool-bar-mode 0)
+(scroll-bar-mode 0)
+;; (menu-bar-mode -1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 5.2 キーバインドの設定                                    ;;
@@ -121,7 +125,6 @@
 ;; (define-key global-map [?¥] [?\\])
 ;; 165が¥（円マーク） , 92が\（バックスラッシュ）を表す
 (define-key global-map [165] [92])
-
 
 ;; 行コピー、行キル
 (defun copy-whole-line (&optional arg)
@@ -162,21 +165,24 @@
 
 ;; 単語選択 M-@
 
-(defun mark-word-at-point ()
-  (interactive)
-  (let ((char (char-to-string (char-after (point)))))
-    (cond
-     ((string= " " char) (delete-horizontal-space))
-     ((string-match "[\t\n -@\[-`{-~]" char) (mark-word ))
-     (t (forward-char) (backward-word) (mark-word 1)))))
-(global-set-key "\M-@" 'mark-word-at-point)
+(when window-system
+  (defun mark-word-at-point ()
+    (interactive)
+    (let ((char (char-to-string (char-after (point)))))
+      (cond
+       ((string= " " char) (delete-horizontal-space))
+       ((string-match "[\t\n -@\[-`{-~]" char) (mark-word ))
+       (t (forward-char) (backward-word) (mark-word 1))))))
+(when window-system
+  (global-set-key "\M-@" 'mark-word-at-point))
 
 
 
 ;; 行や範囲のコピー＆ペースト
 
-(require 'duplicate-thing)
-(global-set-key (kbd "M-c") 'duplicate-thing)
+(when window-system
+  (require 'duplicate-thing)
+  (global-set-key (kbd "M-c") 'duplicate-thing))
 
 
 
@@ -185,26 +191,105 @@
 ;; 5.3 環境変数の設定                                        ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; P82-83 パスの設定
-(add-to-list 'exec-path "/opt/local/bin")
-(add-to-list 'exec-path "/usr/local/bin")
-(add-to-list 'exec-path "~/bin")
+(when window-system
+  (add-to-list 'exec-path "/opt/local/bin")
+  (add-to-list 'exec-path "/usr/local/bin")
+  (add-to-list 'exec-path "~/bin"))
 
 ;;; P85 文字コードを指定する
-(set-language-environment "Japanese")
-(prefer-coding-system 'utf-8)
+(when window-system
+  (set-language-environment "Japanese")
+  (prefer-coding-system 'utf-8))
 
 ;;; P86 ファイル名の扱い
 ;; Mac OS Xの場合のファイル名の設定
-(when (eq system-type 'darwin)
-  (require 'ucs-normalize)
-  (set-file-name-coding-system 'utf-8-hfs)
-  (setq locale-coding-system 'utf-8-hfs))
+;; (when (eq system-type 'darwin)
+;;   (require 'ucs-normalize)
+;;   (set-file-name-coding-system 'utf-8-hfs)
+;;   (setq locale-coding-system 'utf-8-hfs))
 
 ;; Windowsの場合のファイル名の設定
 ;; (when (eq window-system 'w32)
 ;;   (set-file-name-coding-system 'cp932)
 ;;   (setq locale-coding-system 'cp932))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 利用する Shell の設定                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; より下に記述した物が PATH の先頭に追加されます
+(when window-system
+  (dolist (dir (list
+		"/sbin"
+		"/usr/sbin"
+		"/bin"
+		"/usr/bin"
+		"/opt/local/bin"
+		"/sw/bin"
+		"/usr/local/bin"
+		(expand-file-name "~/bin")
+		(expand-file-name "~/.emacs.d/bin")
+		))
+    ;; PATH と exec-path に同じ物を追加します
+    (when (and (file-exists-p dir) (not (member dir exec-path)))
+      (setenv "PATH" (concat dir ":" (getenv "PATH")))
+      (setq exec-path (append (list dir) exec-path)))))
+;; MANPATH も設定しておく
+(when window-system
+  (setenv "MANPATH" (concat "/usr/local/man:/usr/share/man:/Developer/usr/share/man:/sw/share/man" (getenv "MANPATH"))))
+
+;; shell の存在を確認
+(when window-system
+  (defun skt:shell ()
+    (or (executable-find "zsh")
+	(executable-find "bash")
+	;; (executable-find "f_zsh") ;; Emacs + Cygwin を利用する人は Zsh の代りにこれにしてください
+	;; (executable-find "f_bash") ;; Emacs + Cygwin を利用する人は Bash の代りにこれにしてください
+	(executable-find "cmdproxy")
+	(error "can't find 'shell' command in PATH!!"))))
+
+;; Shell 名の設定
+(when window-system
+  (setq shell-file-name (skt:shell))
+  (setenv "SHELL" shell-file-name)
+  (setq explicit-shell-file-name shell-file-name)
+
+  (set-language-environment  'utf-8)
+  (prefer-coding-system 'utf-8))
+
+
+;; (cond
+;;  ((or (eq window-system 'mac) (eq window-system 'ns))
+;;   ;; Mac OS X の HFS+ ファイルフォーマットではファイル名は NFD (の様な物)で扱うため以下の設定をする必要がある
+;;   (require 'ucs-normalize)
+;;   (setq file-name-coding-system 'utf-8-hfs)
+;;   (setq locale-coding-system 'utf-8-hfs))
+;;  (or (eq system-type 'cygwin) (eq system-type 'windows-nt)
+;;   (setq file-name-coding-system 'utf-8)
+;;   (setq locale-coding-system 'utf-8)
+;;   ;; もしコマンドプロンプトを利用するなら sjis にする
+;;   ;; (setq file-name-coding-system 'sjis)
+;;   ;; (setq locale-coding-system 'sjis)
+;;   ;; 古い Cygwin だと EUC-JP にする
+;;   ;; (setq file-name-coding-system 'euc-jp)
+;;   ;; (setq locale-coding-system 'euc-jp)
+;;   )
+;;  (t
+;;   (setq file-name-coding-system 'utf-8)
+;;   (setq locale-coding-system 'utf-8)))
+
+
+;; Emacs が保持する terminfo を利用する
+;; (setq system-uses-terminfo nil)
+
+;; ;; エスケープを綺麗に表示する
+;; (autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
+;; (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
+
+;; ;; term 呼び出しキーの割り当て
+;; (global-set-key (kbd "C-c t") '(lambda ()
+;;                                 (interactive)
+;;                                 (term shell-file-name)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -212,31 +297,32 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; P87-89 モードラインに関する設定
 ;; カラム番号も表示
-(column-number-mode t)
-;; ファイルサイズを表示
-(size-indication-mode t)
-;; 時計を表示（好みに応じてフォーマットを変更可能）
- (setq display-time-day-and-date t) ; 曜日・月・日を表示
- (setq display-time-24hr-format t) ; 24時表示
-(display-time-mode t)
-;; バッテリー残量を表示
-(display-battery-mode t)
-;; リージョン内の行数と文字数をモードラインに表示する（範囲指定時のみ）
-;; http://d.hatena.ne.jp/sonota88/20110224/1298557375
-(defun count-lines-and-chars ()
-  (if mark-active
-      (format "%d lines,%d chars "
-              (count-lines (region-beginning) (region-end))
-              (- (region-end) (region-beginning)))
+(when window-system
+  (column-number-mode t)
+  ;; ファイルサイズを表示
+  (size-indication-mode t)
+  ;; ;; 時計を表示（好みに応じてフォーマットを変更可能）
+  ;;  (setq display-time-day-and-date t) ; 曜日・月・日を表示
+  ;;  (setq display-time-24hr-format t) ; 24時表示
+  ;; (display-time-mode t)
+  ;; ;; バッテリー残量を表示
+  ;; (display-battery-mode t)
+  ;; リージョン内の行数と文字数をモードラインに表示する（範囲指定時のみ）
+  ;; http://d.hatena.ne.jp/sonota88/20110224/1298557375
+  (defun count-lines-and-chars ()
+    (if mark-active
+	(format "%d lines,%d chars "
+		(count-lines (region-beginning) (region-end))
+		(- (region-end) (region-beginning)))
       ;; これだとエコーエリアがチラつく
       ;;(count-lines-region (region-beginning) (region-end))
-    ""))
+      ""))
 
-(add-to-list 'default-mode-line-format
-             '(:eval (count-lines-and-chars)))
+  (add-to-list 'default-mode-line-format
+	       '(:eval (count-lines-and-chars)))
 
 ;;; P90 タイトルバーにファイルのフルパスを表示
-(setq frame-title-format "%f")
+  (setq frame-title-format "%f"))
 
 ;; 行番号を常に表示する
 ;; (global-linum-mode t)
@@ -260,10 +346,11 @@
 
 ;; 透明度を変更するコマンド M-x set-alpha
 ;; http://qiita.com/marcy@github/items/ba0d018a03381a964f24
-(defun set-alpha (alpha-num)
-  "set frame parameter 'alpha"
-  (interactive "nAlpha: ")
-  (set-frame-parameter nil 'alpha (cons alpha-num '(90))))
+(when window-system
+  (defun set-alpha (alpha-num)
+    "set frame parameter 'alpha"
+    (interactive "nAlpha: ")
+    (set-frame-parameter nil 'alpha (cons alpha-num '(90)))))
 
 
 
@@ -272,19 +359,20 @@
 ;; 5.5インデントの設定                                       ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; P92-94 タブ文字の表示幅
-;; TABの表示幅。初期値は8
-(setq-default tab-width 2)
-;; インデントにタブ文字を使用しない
-(setq-default indent-tabs-mode nil)
-;; php-modeのみタブを利用しない
-;; (add-hook 'php-mode-hook
-;;           '(lambda ()
-;;             (setq indent-tabs-mode nil)))
+(when window-system
+	;; TABの表示幅。初期値は8
+	(setq-default tab-width 2)
+	;; インデントにタブ文字を使用しない
+	(setq-default indent-tabs-mode nil)
+	;; php-modeのみタブを利用しない
+	;; (add-hook 'php-mode-hook
+	;;           '(lambda ()
+	;;             (setq indent-tabs-mode nil)))
 
-;; C、C++、JAVA、PHPなどのインデント
-(add-hook 'c-mode-common-hook
-          '(lambda ()
-             (c-set-style "bsd")))
+	;; C、C++、JAVA、PHPなどのインデント
+	(add-hook 'c-mode-common-hook
+						'(lambda ()
+							 (c-set-style "bsd"))))
 
 
 
@@ -301,26 +389,34 @@
 
 ;;(require 'color-theme)
 
-(when (require 'color-theme nil t)
-;;テーマを読み込むための設定
- (color-theme-initialize)
-;;テーマhoberに変更する
- ;;(color-theme-hober))
+
+
+
+ (when (require 'color-theme nil t)
+ ;;テーマを読み込むための設定
+  (color-theme-initialize)
+;; ;;テーマhoberに変更する
+ ;; (color-theme-hober))
+ ;; (color-theme-charcoal-black))
+ ;; (color-theme-comidia))
+  (color-theme-clarity))
+ ;; (color-theme-goldenrod))
+ ;; (color-theme-ld-dark))
+ ;; (color-theme-midnight))
+ ;; (color-theme-pok-wob))
+ ;; (color-theme-simple-1))
+ ;; (color-theme-billw))
 
  ;; (color-theme-andreas))
  ;; (color-theme-arjen))
  ;; (color-theme-bharadwaj-slate))
- ;; (color-theme-billw))
  ;; (color-theme-blue-mood))
  ;; (color-theme-blue-sea))
- ;; (color-theme-clarity))
- ;; (color-theme-comidia))
- (color-theme-dark-blue2))
+ ;; (color-theme-dark-blue2))
  ;; (color-theme-digital-ofs1))
  ;; (color-theme-emacs-21))
  ;; (color-theme-euphoria))
  ;; (color-theme-feng-shui))
- ;; (color-theme-goldenrod))
  ;; (color-theme-gray30))
  ;; (color-theme-high-contrast))
  ;; (color-theme-jb-simple))
@@ -329,12 +425,10 @@
  ;; (color-theme-jsc-light2))
  ;; (color-theme-late-night))
  ;; (color-theme-matrix))
- ;; (color-theme-midnight))
  ;; (color-theme-parus))
  ;; (color-theme-resolve))
  ;; (color-theme-retro-orange))
  ;; (color-theme-shaman))
- ;; (color-theme-simple-1))
  ;; (color-theme-subtle-hacker))
  ;; (color-theme-vim-colors))
  ;; (color-theme-whateveryouwant))
@@ -344,13 +438,23 @@
 
 
 
+;;;; installしたthemeを使用
+  ;; M-x load-theme   RET   seti
+
+  ;; (load-theme 'seti t)
+ ;; (load-theme 'atom-dark t)
+ ;; (load-theme 'solarized-dark t)
+ ;; (load-theme 'solarized-light t)
+
+
+
 
 ;;; P97-99 フォントの設定
 (when (eq window-system 'ns)
   ;; asciiフォントをMenloに
   (set-face-attribute 'default nil
                       :family "Menlo"
-                      :height 200)
+                      :height 180)
   ;; 日本語フォントをヒラギノ明朝 Proに
   (set-fontset-font
    nil 'japanese-jisx0208
@@ -411,10 +515,37 @@
 (setq show-paren-delay 0) ; 表示までの秒数。初期値は0.125
 (show-paren-mode t) ; 有効化
 ;; parenのスタイル: expressionは括弧内も強調表示
-;;(setq show-paren-style 'expression)
+;; (setq show-paren-style 'expression)
 ;; フェイスを変更する
-;;(set-face-background 'show-paren-match-face nil)
-;;(set-face-underline-p 'show-paren-match-face "yellow")
+;; (set-face-background 'show-paren-match-face nil)
+;; (set-face-underline-p 'show-paren-match-face "yellow")
+
+
+
+
+(when window-system
+  ;; In order to change your cursor or caret, what you want to do is:
+  ;; Open your .emacs file and this line of code:
+  (setq-default cursor-type 'box)
+  ;; And to change the color:
+  (set-cursor-color "#ffffff"))
+
+
+
+;; (add-to-list 'default-frame-alist '(cursor-type . 'box)) ;; ボックス型カーソル
+;; (add-to-list 'default-frame-alist '(cursor-type . 'hbar)) ;; 下線
+;; (add-to-list 'default-frame-alist '(cursor-type . '(bar . 3)) ;; 幅3ポイントの縦棒カーソル
+;; 指定できるカーソルの種類は、下の表の通りです。 hbar, hollow は Emacs 21 では使えないかもしれません。
+
+;; 値	説明
+;; t	デフォルトの形状を利用。
+;; nil	カーソルを表示しません。
+;; box	文字と同サイズのボックス型のカーソルを表示します。通常はこの形がデフォルトです。
+;; bar	縦棒型のカーソルです。
+;; (bar . 3)	幅が 3 ポイントの縦棒カーソルを表示します。
+;; hbar	下線を表示します。
+;; (hbar . 3)	下線の高さが 3 ポイントになります。
+;; hollow	中抜きのカーソルです。定義されていない値を代入すると、hollow 型が適用されます。
 
 
 
@@ -435,35 +566,36 @@
 ;;       `((".*" ,temporary-file-directory t)))
 
 ;; バックアップとオートセーブファイルを~/.emacs.d/backups/へ集める
-(add-to-list 'backup-directory-alist
-             (cons "." "~/.emacs.d/backups/"))
-(setq auto-save-file-name-transforms
-      `((".*" ,(expand-file-name "~/.emacs.d/backups/") t)))
+(when window-system
+  (add-to-list 'backup-directory-alist
+               (cons "." "~/.emacs.d/backups/"))
+  (setq auto-save-file-name-transforms
+        `((".*" ,(expand-file-name "~/.emacs.d/backups/") t)))
 
-;; オートセーブファイル作成までの秒間隔
-(setq auto-save-timeout 15)
-;; オートセーブファイル作成までのタイプ間隔
-(setq auto-save-interval 60)
+  ;; オートセーブファイル作成までの秒間隔
+  (setq auto-save-timeout 15)
+  ;; オートセーブファイル作成までのタイプ間隔
+  (setq auto-save-interval 60))
 
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 5.9 フック                                             ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; ファイルが #! から始まる場合、+xを付けて保存する
-(add-hook 'after-save-hook
-          'executable-make-buffer-file-executable-if-script-p)
+;; ;; ファイルが #! から始まる場合、+xを付けて保存する
+;; (add-hook 'after-save-hook
+;;           'executable-make-buffer-file-executable-if-script-p)
 
-;; emacs-lisp-mode-hook用の関数を定義
-(defun elisp-mode-hooks ()
-  "lisp-mode-hooks"
-  (when (require 'eldoc nil t)
-    (setq eldoc-idle-delay 0.2)
-    (setq eldoc-echo-area-use-multiline-p t)
-    (turn-on-eldoc-mode)))
+;; ;; emacs-lisp-mode-hook用の関数を定義
+;; (defun elisp-mode-hooks ()
+;;   "lisp-mode-hooks"
+;;   (when (require 'eldoc nil t)
+;;     (setq eldoc-idle-delay 0.2)
+;;     (setq eldoc-echo-area-use-multiline-p t)
+;;     (turn-on-eldoc-mode)))
 
-;; emacs-lisp-modeのフックをセット
-(add-hook 'emacs-lisp-mode-hook 'elisp-mode-hooks)
+;; ;; emacs-lisp-modeのフックをセット
+;; (add-hook 'emacs-lisp-mode-hook 'elisp-mode-hooks)
 
 
 
@@ -756,13 +888,13 @@
 ;; ▼要拡張機能インストール▼
 ;;; P139-140 カーソルの移動履歴──point-undo
 ;; ;; point-undoの設定
-;; (when (require 'point-undo nil t)
-;;   ;; (define-key global-map [f5] 'point-undo)
-;;   ;; (define-key global-map [f6] 'point-redo)
-;;   ;; 筆者のお勧めキーバインド
-;;   (define-key global-map (kbd "M-[") 'point-undo)
-;;   (define-key global-map (kbd "M-]") 'point-redo)
-;;   )
+(when (require 'point-undo nil t)
+  ;; (define-key global-map [f5] 'point-undo)
+  ;; (define-key global-map [f6] 'point-redo)
+  ;; 筆者のお勧めキーバインド
+  (define-key global-map (kbd "M-[") 'point-undo)
+  (define-key global-map (kbd "M-]") 'point-redo)
+  )
 
 
 
@@ -770,15 +902,16 @@
 ;; emmet-mode                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    (require 'emmet-mode)
-;;
-;; Example setup:
-;;
-   (add-to-list 'load-path "~/Emacs/emmet/")
-;;   (require 'emmet-mode)
-   (add-hook 'sgml-mode-hook 'emmet-mode) ;; Auto-start on any markup modes
-   (add-hook 'html-mode-hook 'emmet-mode)
-   (add-hook 'css-mode-hook  'emmet-mode)
+(when window-system
+  (require 'emmet-mode)
+  ;;
+  ;; Example setup:
+  ;;
+  (add-to-list 'load-path "~/Emacs/emmet/")
+  ;;   (require 'emmet-mode)
+  (add-hook 'sgml-mode-hook 'emmet-mode) ;; Auto-start on any markup modes
+  (add-hook 'html-mode-hook 'emmet-mode)
+  (add-hook 'css-mode-hook  'emmet-mode))
 ;;
 ;; Enable the minor mode with M-x emmet-mode.
 ;;
@@ -796,8 +929,9 @@
 
 ;;; Installation:
 ;;
+(when window-system
    (require 'autopair)
-   (autopair-global-mode) ;; to enable in all buffers
+   (autopair-global-mode)) ;; to enable in all buffers
 ;;
 ;; To enable autopair in just some types of buffers, comment out the
 ;; `autopair-global-mode' and put autopair-mode in some major-mode
@@ -820,41 +954,42 @@
 ;; yasnippet                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(require 'cl)
-;; 問い合わせを簡略化 yes/no を y/n
-(fset 'yes-or-no-p 'y-or-n-p)
+(when window-system
+  (require 'cl)
+  ;; 問い合わせを簡略化 yes/no を y/n
+  (fset 'yes-or-no-p 'y-or-n-p)
 
-;; yasnippetを置いているフォルダにパスを通す
-(add-to-list 'load-path
-             (expand-file-name "~/.emacs.d/elpa/yasnippet-20161221.1953"))
-(require 'yasnippet)
-;; ~/.emacs.d/にsnippetsというフォルダを作っておきましょう
-(setq yas-snippet-dirs
-      '("~/.emacs.d/snippets" ;; 作成するスニペットはここに入る
-        "~/.emacs.d/elpa/yasnippet-20161221.1953/snippets" ;; 最初から入っていたスニペット(省略可能)
-        ))
-(yas-global-mode 1)
+  ;; yasnippetを置いているフォルダにパスを通す
+  (add-to-list 'load-path
+               (expand-file-name "~/.emacs.d/elpa/yasnippet-20161221.1953"))
+  (require 'yasnippet)
+  ;; ~/.emacs.d/にsnippetsというフォルダを作っておきましょう
+  (setq yas-snippet-dirs
+        '("~/.emacs.d/snippets" ;; 作成するスニペットはここに入る
+          "~/.emacs.d/elpa/yasnippet-20161221.1953/snippets" ;; 最初から入っていたスニペット(省略可能)
+          ))
+  (yas-global-mode 1)
 
-;; 単語展開キーバインド (ver8.0から明記しないと機能しない)
-;; (setqだとtermなどで干渉問題ありでした)
-;; もちろんTAB以外でもOK 例えば "C-;"とか
+  ;; 単語展開キーバインド (ver8.0から明記しないと機能しない)
+  ;; (setqだとtermなどで干渉問題ありでした)
+  ;; もちろんTAB以外でもOK 例えば "C-;"とか
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   (quote
-    (duplicate-thing shell-pop yasnippet yaml-mode wgrep undohist undo-tree solarized-theme ruby-electric ruby-block redo+ point-undo php-mode php-completion perl-completion multi-term moccur-edit inf-ruby helm emmet-mode elscreen egg descbinds-anything ctags autopair auto-complete)))
- '(yas-trigger-key "TAB"))
+  (custom-set-variables
+   ;; custom-set-variables was added by Custom.
+   ;; If you edit it by hand, you could mess it up, so be careful.
+   ;; Your init file should contain only one such instance.
+   ;; If there is more than one, they won't work right.
+   '(package-selected-packages
+     (quote
+      (duplicate-thing shell-pop yasnippet yaml-mode wgrep undohist undo-tree solarized-theme ruby-electric ruby-block redo+ point-undo php-mode php-completion perl-completion multi-term moccur-edit inf-ruby helm emmet-mode elscreen egg descbinds-anything ctags autopair auto-complete)))
+   '(yas-trigger-key "TAB"))
 
-;; 既存スニペットを挿入する
-(define-key yas-minor-mode-map (kbd "C-x i i") 'yas-insert-snippet)
-;; 新規スニペットを作成するバッファを用意する
-(define-key yas-minor-mode-map (kbd "C-x i n") 'yas-new-snippet)
-;; 既存スニペットを閲覧・編集する
-(define-key yas-minor-mode-map (kbd "C-x i v") 'yas-visit-snippet-file)
+  ;; 既存スニペットを挿入する
+  (define-key yas-minor-mode-map (kbd "C-x i i") 'yas-insert-snippet)
+  ;; 新規スニペットを作成するバッファを用意する
+  (define-key yas-minor-mode-map (kbd "C-x i n") 'yas-new-snippet)
+  ;; 既存スニペットを閲覧・編集する
+  (define-key yas-minor-mode-map (kbd "C-x i v") 'yas-visit-snippet-file))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 6.6 ウィンドウ管理  ELScreen                              ;;
@@ -869,7 +1004,11 @@
 ;;       (define-key elscreen-map (kbd "C-z") 'iconify-or-deiconify-frame)
 ;;     (define-key elscreen-map (kbd "C-z") 'suspend-emacs)))
 
-(elscreen-start)
+;; C-z T    Show/hide the tab at the top of screen
+
+;; (when window-system
+;;   (elscreen-start)
+;;   (require 'elscreen nil t))
 
 (require 'elscreen nil t)
 
@@ -1466,7 +1605,7 @@ Use CREATE-TEMP-F for creating temp copy."
 ;; M-! (shell-command) ミニバッファ
 ;; M-! date RET  現在時刻
 
-;; C-u M-!　カレントファイルへ結果を出力
+;; C-u M-! カレントファイルへ結果を出力
 ;; C-u M-! ls -l RET    (Users/inomoto/)
 
 ;; C-u M-| grep "Do" RET  リージョンがgrepで処理された結果に置換される
@@ -1477,45 +1616,15 @@ Use CREATE-TEMP-F for creating temp copy."
 ;; multi-term                           ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+;; プロンプトの崩れを治す
+;; disable menu-bar
+;;  (menu-bar-mode -1)
+
+
 ;; ▼要拡張機能インストール▼
 ;;; ターミナルの利用 multi-term
 ;;(require 'multi-term)
-
-;; より下に記述した物が PATH の先頭に追加されます
-(dolist (dir (list
-              "/sbin"
-              "/usr/sbin"
-              "/bin"
-              "/usr/bin"
-              "/opt/local/bin"
-              "/sw/bin"
-              "/usr/local/bin"
-              (expand-file-name "~/bin")
-              (expand-file-name "~/.emacs.d/bin")
-              ))
- ;; PATH と exec-path に同じ物を追加します
- (when (and (file-exists-p dir) (not (member dir exec-path)))
-   (setenv "PATH" (concat dir ":" (getenv "PATH")))
-   (setq exec-path (append (list dir) exec-path))))
- ;; MANPATH も設定しておく
- (setenv "MANPATH" (concat "/usr/local/man:/usr/share/man:/Developer/usr/share/man:/sw/share/man" (getenv "MANPATH")))
-
-;; shell の存在を確認
-(defun skt:shell ()
-  (or (executable-find "zsh")
-      (executable-find "bash")
-      ;; (executable-find "f_zsh") ;; Emacs + Cygwin を利用する人は Zsh の代りにこれにしてください
-      ;; (executable-find "f_bash") ;; Emacs + Cygwin を利用する人は Bash の代りにこれにしてください
-      (executable-find "cmdproxy")
-      (error "can't find 'shell' command in PATH!!")))
-
-;; Shell 名の設定
-(setq shell-file-name (skt:shell))
-(setenv "SHELL" shell-file-name)
-(setq explicit-shell-file-name shell-file-name)
-
-(set-language-environment  'utf-8)
-(prefer-coding-system 'utf-8)
 
 
 
@@ -1569,6 +1678,7 @@ Use CREATE-TEMP-F for creating temp copy."
 (setq multi-term-program shell-file-name)
 
 (add-to-list 'term-unbind-key-list '"M-x")
+
 
 
 ;; (add-hook 'term-mode-hook
@@ -1727,7 +1837,7 @@ Use CREATE-TEMP-F for creating temp copy."
 ;; whitespace-mode をオン
 (global-whitespace-mode t)
 ;; F5 で whitespace-mode をトグル
-(define-key global-map (kbd "<f5>") 'global-whitespace-mode)
+(define-key global-map (kbd "C-<f5>") 'global-whitespace-mode)
 
 
 ;;; Mac でファイルを開いたときに、新たなフレームを作らない
@@ -1756,9 +1866,9 @@ Use CREATE-TEMP-F for creating temp copy."
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
 ;; )
-(custom-set-faces
+;;(custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- )
+;; )
