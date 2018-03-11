@@ -954,42 +954,35 @@
 ;; yasnippet                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(when window-system
-  (require 'cl)
-  ;; 問い合わせを簡略化 yes/no を y/n
-  (fset 'yes-or-no-p 'y-or-n-p)
+(require 'cl)
+;; 問い合わせを簡略化 yes/no を y/n
+(fset 'yes-or-no-p 'y-or-n-p)
 
-  ;; yasnippetを置いているフォルダにパスを通す
-  (add-to-list 'load-path
-               (expand-file-name "~/.emacs.d/elpa/yasnippet-20161221.1953"))
-  (require 'yasnippet)
-  ;; ~/.emacs.d/にsnippetsというフォルダを作っておきましょう
-  (setq yas-snippet-dirs
-        '("~/.emacs.d/snippets" ;; 作成するスニペットはここに入る
-          "~/.emacs.d/elpa/yasnippet-20161221.1953/snippets" ;; 最初から入っていたスニペット(省略可能)
-          ))
-  (yas-global-mode 1)
 
-  ;; 単語展開キーバインド (ver8.0から明記しないと機能しない)
-  ;; (setqだとtermなどで干渉問題ありでした)
-  ;; もちろんTAB以外でもOK 例えば "C-;"とか
 
-  (custom-set-variables
-   ;; custom-set-variables was added by Custom.
-   ;; If you edit it by hand, you could mess it up, so be careful.
-   ;; Your init file should contain only one such instance.
-   ;; If there is more than one, they won't work right.
-   '(package-selected-packages
-     (quote
-      (duplicate-thing shell-pop yasnippet yaml-mode wgrep undohist undo-tree solarized-theme ruby-electric ruby-block redo+ point-undo php-mode php-completion perl-completion multi-term moccur-edit inf-ruby helm emmet-mode elscreen egg descbinds-anything ctags autopair auto-complete)))
-   '(yas-trigger-key "TAB"))
+;; パスを通す
+(add-to-list 'load-path
+             (expand-file-name "~/.emacs.d/elpa/yasnippet-20180310.1614/"))
 
-  ;; 既存スニペットを挿入する
-  (define-key yas-minor-mode-map (kbd "C-x i i") 'yas-insert-snippet)
-  ;; 新規スニペットを作成するバッファを用意する
-  (define-key yas-minor-mode-map (kbd "C-x i n") 'yas-new-snippet)
-  ;; 既存スニペットを閲覧・編集する
-  (define-key yas-minor-mode-map (kbd "C-x i v") 'yas-visit-snippet-file))
+;; 自分用・追加用テンプレート -> mysnippetに作成したテンプレートが格納される
+(require 'yasnippet)
+(setq yas-snippet-dirs
+      '("~/.emacs.d/mysnippets"
+        "~/.emacs.d/yasnippets"
+        ))
+
+;; 既存スニペットを挿入する
+(define-key yas-minor-mode-map (kbd "C-x i i") 'yas-insert-snippet)
+;; 新規スニペットを作成するバッファを用意する
+(define-key yas-minor-mode-map (kbd "C-x i n") 'yas-new-snippet)
+;; 既存スニペットを閲覧・編集する
+(define-key yas-minor-mode-map (kbd "C-x i v") 'yas-visit-snippet-file)
+
+(yas-global-mode 1)
+
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 6.6 ウィンドウ管理  ELScreen                              ;;
