@@ -376,6 +376,219 @@
 
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;    web-mode                       ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+(setq auto-mode-alist
+      (append '(
+                ("\\.\\(html\\|xhtml\\|shtml\\|tpl\\)\\'" . web-mode)
+                ("\\.php\\'" . php-mode)
+                )
+              auto-mode-alist))
+
+;;==========================================
+;;         web-modeの設定
+;;==========================================
+(require 'web-mode)
+(defun web-mode-hook ()
+  "Hooks for Web mode."
+  ;; 変更日時の自動修正
+  (setq time-stamp-line-limit -200)
+  (if (not (memq 'time-stamp write-file-hooks))
+      (setq write-file-hooks
+            (cons 'time-stamp write-file-hooks)))
+  (setq time-stamp-format " %3a %3b %02d %02H:%02M:%02S %:y %Z")
+  (setq time-stamp-start "Last modified:")
+  (setq time-stamp-end "$")
+  ;; web-modeの設定
+  (setq web-mode-markup-indent-offset 0) ;; html indent
+  (setq web-mode-css-indent-offset 2)    ;; css indent
+  (setq web-mode-code-indent-offset 2)   ;; script indent(js,php,etc..)
+  ;; htmlの内容をインデント
+  ;; TEXTAREA等の中身をインデントすると副作用が起こったりするので
+  ;; デフォルトではインデントしない
+  ;;(setq web-mode-indent-style 2)
+  ;; コメントのスタイル
+  ;;   1:htmlのコメントスタイル(default)
+  ;;   2:テンプレートエンジンのコメントスタイル
+  ;;      (Ex. {# django comment #},{* smarty comment *},{{-- blade comment --}})
+  (setq web-mode-comment-style 2)
+  ;; 終了タグの自動補完をしない
+  ;;(setq web-mode-disable-auto-pairing t)
+  ;; color:#ff0000;等とした場合に指定した色をbgに表示しない
+  ;;(setq web-mode-disable-css-colorization t)
+  ;;css,js,php,etc..の範囲をbg色で表示
+  ;; (setq web-mode-enable-block-faces t)
+  ;; (custom-set-faces
+  ;;  '(web-mode-server-face
+  ;;    ((t (:background "grey"))))                  ; template Blockの背景色
+  ;;  '(web-mode-css-face
+  ;;    ((t (:background "grey18"))))                ; CSS Blockの背景色
+  ;;  '(web-mode-javascript-face
+  ;;    ((t (:background "grey36"))))                ; javascript Blockの背景色
+  ;;  )
+  ;;(setq web-mode-enable-heredoc-fontification t)
+)
+(add-hook 'web-mode-hook  'web-mode-hook)
+;; 色の設定
+(custom-set-faces
+ '(web-mode-doctype-face
+   ((t (:foreground "#82AE46"))))                          ; doctype
+ '(web-mode-html-tag-face
+   ((t (:foreground "#E6B422" :weight bold))))             ; 要素名
+ '(web-mode-html-attr-name-face
+   ((t (:foreground "#C97586"))))                          ; 属性名など
+ '(web-mode-html-attr-value-face
+   ((t (:foreground "#82AE46"))))                          ; 属性値
+ '(web-mode-comment-face
+   ((t (:foreground "#D9333F"))))                          ; コメント
+ '(web-mode-server-comment-face
+   ((t (:foreground "#D9333F"))))                          ; コメント
+ '(web-mode-css-rule-face
+   ((t (:foreground "#A0D8EF"))))                          ; cssのタグ
+ '(web-mode-css-pseudo-class-face
+   ((t (:foreground "#FF7F00"))))                          ; css 疑似クラス
+ '(web-mode-css-at-rule-face
+   ((t (:foreground "#FF7F00"))))                          ; cssのタグ
+)
+
+
+;; 主なキーアサイン
+;; 個人的には、C-c C-fでタグブロックを開閉できるので、複雑なHTMLを編集するときは便利だと思う。
+
+;; Generalなキーアサイン
+;; キー	機能
+;; C-c C-;	コメント/アンコメント
+;; C-c C-e	閉じていないタグを見つける
+;; C-c C-f	指定したタグのブロックを開閉する
+;; C-c C-i	現在開いているバッファをインデントする
+;; C-c C-m	マークする(マークする場所によって選択範囲が変わります)
+;; C-c C-n	開始・終了タグまでジャンプ
+;; C-c C-r	HTML entitiesをリプレースする
+;; C-c C-s	スニペットを挿入
+;; C-c C-w	スペースを表示・非表示
+;; HTML element系のキーアサイン
+;; キー	機能
+;; C-c /	閉じタグを挿入(エレメントを閉じる)
+;; C-c eb	エレメントの最初へ移動
+;; C-c ed	エレメントを削除
+;; C-c ee	エレメントの最後へ移動
+;; C-c ee	エレメントを複製
+;; C-c en	次のエレメントへ移動
+;; C-c ep	前のエレメントへ移動
+;; C-c eu	親エレメントへ移動
+;; C-c er	エレメントをリネーム
+;; C-c es	エレメント全体を選択
+;; C-c ei	エレメントのコンテンツを選択
+;; HTML tag系のキーアサイン
+;; キー	機能
+;; C-c tb	タグの先頭へ移動(エレメントの先頭では無くタグの先頭です。
+;; </div>で実行した場合は</div>タグの先頭(<)に移動します)
+;; C-c te	タグの後尾へ移動
+;; C-c tm	マッチするタグへ移動
+;; C-c ts	タグを選択
+;; C-c tp	前のタグに移動
+;; C-c tn	次のタグに移動
+
+
+
+
+
+
+;; (require 'web-mode)
+
+;; ;;; emacs 23以下の互換
+;; (when (< emacs-major-version 24)
+;;   (defalias 'prog-mode 'fundamental-mode))
+
+;; ;;; 適用する拡張子
+;; (add-to-list 'auto-mode-alist '("\\.phtml$"     . web-mode))
+;; (add-to-list 'auto-mode-alist '("\\.tpl\\.php$" . web-mode))
+;; (add-to-list 'auto-mode-alist '("\\.jsp$"       . web-mode))
+;; (add-to-list 'auto-mode-alist '("\\.as[cp]x$"   . web-mode))
+;; (add-to-list 'auto-mode-alist '("\\.erb$"       . web-mode))
+;; (add-to-list 'auto-mode-alist '("\\.html?$"     . web-mode))
+
+;; ;;; インデント数
+;; (defun web-mode-hook ()
+;;   "Hooks for Web mode."
+;;   (setq web-mode-html-offset   2)
+;;   (setq web-mode-css-offset    2)
+;;   (setq web-mode-script-offset 2)
+;;   (setq web-mode-php-offset    2)
+;;   (setq web-mode-java-offset   2)
+;;   (setq web-mode-asp-offset    2))
+;; (add-hook 'web-mode-hook 'web-mode-hook)
+
+
+ (defun web-mode-indent (num)
+      (interactive "nIndent: ")
+      (setq web-mode-markup-indent-offset num)
+      (setq web-mode-css-indent-offset num)
+      (setq web-mode-style-padding num)
+      (setq web-mode-code-indent-offset num)
+      (setq web-mode-script-padding num)
+      (setq web-mode-block-padding num)
+      )
+    (web-mode-indent 2)
+;; 切り替える時は M-x web-mode-indent してミニバッファでインデント数を入力する。
+
+
+
+;; 良いなと思った機能
+;; web-mode-toggle-folding "C-c C-f"
+;; HTMLタグを折り畳む機能です。カーソルの位置のタグ内が省略されアンダーラインでマークされます。戻すときも"C-c C-f"です。
+;; web-mode-rename-element "C-c C-r"
+;; タグの開始タグと終了タグの名前を変えてくれます。
+;; web-mode-match-tag "C-c C-n"
+;; タグの開始タグと終了タグにカーソルを持っていってくれます。入れ子しすぎて対応関係にあるタグが分からなくなった場合に便利すぎます。これで終了タグにコメントを付けずとも大丈夫ですね。
+;; web-mode-delete-element "C-c C-b"
+;; 現在位置のタグを丸ごと消せます。
+;; web-mode-duplicate-element "C-c C-j"
+;; 現在位置のタグを複製します。
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 辞書  google-translate                                ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+(require 'google-translate)
+(require 'google-translate-default-ui)
+
+(defvar google-translate-english-chars "[:ascii:]"
+  "これらの文字が含まれているときは英語とみなす")
+(defun google-translate-enja-or-jaen (&optional string)
+  "regionか現在位置の単語を翻訳する。C-u付きでquery指定も可能"
+  (interactive)
+  (setq string
+        (cond ((stringp string) string)
+              (current-prefix-arg
+               (read-string "Google Translate: "))
+              ((use-region-p)
+               (buffer-substring (region-beginning) (region-end)))
+              (t
+               (thing-at-point 'word))))
+  (let* ((asciip (string-match
+                  (format "\\`[%s]+\\'" google-translate-english-chars)
+                  string)))
+    (run-at-time 0.1 nil 'deactivate-mark)
+    (google-translate-translate
+     (if asciip "en" "ja")
+     (if asciip "ja" "en")
+     string)))
+
+;; (push '("\*Google Translate\*" :height 0.5 :stick t) popwin:special-display-config)
+
+(global-set-key (kbd "C-M-t") 'google-translate-enja-or-jaen)
+
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 5.6 表示・装飾に関する設定                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
